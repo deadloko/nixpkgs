@@ -1,5 +1,5 @@
 { stdenv, fetchurl, makeWrapper
-, qtbase, qtquickcontrols, qtscript, qtdeclarative, qmake
+, qtbase, qtquickcontrols, qtscript, qtdeclarative, qmake, llvmPackages_8
 , withDocumentation ? false
 }:
 
@@ -19,9 +19,14 @@ stdenv.mkDerivation rec {
     sha256 = "10ddp1365rf0z4bs7yzc9hajisp3j6mzjshyd0vpi4ki126j5f3r";
   };
 
-  buildInputs = [ qtbase qtscript qtquickcontrols qtdeclarative ];
+  buildInputs = [ qtbase qtscript qtquickcontrols qtdeclarative llvmPackages_8.libclang llvmPackages_8.clang-unwrapped llvmPackages_8.clang llvmPackages_8.llvm ];
 
   nativeBuildInputs = [ qmake makeWrapper ];
+
+  # 0001-Fix-clang-libcpp-regexp.patch is for fixing regexp that is used to 
+  # find clang libc++ library include paths. By default it's not covering paths
+  # like libc++-version, which is default name for libc++ folder in nixos.
+  patches = [ ./0001-Fix-clang-libcpp-regexp.patch ]; 
 
   doCheck = true;
 
@@ -34,6 +39,28 @@ stdenv.mkDerivation rec {
   preConfigure = ''
     substituteInPlace src/plugins/plugins.pro \
       --replace '$$[QT_INSTALL_QML]/QtQuick/Controls' '${qtquickcontrols}/${qtbase.qtQmlPrefix}/QtQuick/Controls'
+
+    # Fix paths for llvm/clang includes directories.
+    substituteInPlace src/shared/clang/clang_defines.pri \
+      --replace '$$clean_path($${LLVM_LIBDIR}/clang/$${LLVM_VERSION}/include)' '${llvmPackages_8.clang-unwrapped}/lib/clang/8.0.0/include' \
+      --replace '$$clean_path($${LLVM_BINDIR})' '${llvmPackages_8.clang}/bin'
+
+    # Fix include path to find clang and clang-c include directories.  
+    substituteInPlace src/plugins/clangtools/clangtools.pro \
+      --replace 'INCLUDEPATH += $$LLVM_INCLUDEPATH' 'INCLUDEPATH += $$LLVM_INCLUDEPATH ${llvmPackages_8.clang-unwrapped}'
+
+    # Fix paths to libclang library.
+    substituteInPlace src/shared/clang/clang_installation.pri \
+      --replace 'LIBCLANG_LIBS = -L$${LLVM_LIBDIR}' 'LIBCLANG_LIBS = -L${llvmPackages_8.libclang}/lib' \
+      --replace 'LIBCLANG_LIBS += $${CLANG_LIB}' 'LIBCLANG_LIBS += -lclang'
+
+    # Fix clazy plugin name. Reason: qt team maintaining their own fork of 
+    # clang and clazy, which is heavily modified.
+    substituteInPlace src/plugins/clangcodemodel/clangeditordocumentprocessor.cpp \
+      --replace 'clang-lazy' 'clazy'
+ 
+    substituteInPlace src/plugins/clangtools/clangtidyclazyrunner.cpp \
+      --replace 'clang-lazy' 'clazy'
   '';
 
   preBuild = optional withDocumentation ''
