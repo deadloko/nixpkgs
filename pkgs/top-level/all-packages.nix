@@ -9918,6 +9918,8 @@ in
 
   chruby = callPackage ../development/tools/misc/chruby { rubies = null; };
 
+  clazy = callPackage ../development/tools/clazy { };
+
   cl-launch = callPackage ../development/tools/misc/cl-launch {};
 
   cloud-nuke = callPackage ../development/tools/cloud-nuke { };
