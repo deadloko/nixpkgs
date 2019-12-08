@@ -26,7 +26,7 @@ stdenv.mkDerivation rec {
     substituteInPlace i3lock-pixeled \
        --replace i3lock    "${i3lock}/bin/i3lock" \
        --replace convert   "${imagemagick}/bin/convert" \
-       --replace scrot     "${scrot}/bin/scrot" \
+       --replace scrot     "rm \"\$IMGFILE\" && ${scrot}/bin/scrot" \
        --replace playerctl "${playerctl}/bin/playerctl"
   '';
 
