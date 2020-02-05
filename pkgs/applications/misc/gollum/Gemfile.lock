@@ -5,6 +5,7 @@ GEM
     diff-lcs (1.3)
     gemojione (3.3.0)
       json
+    github-markdown (0.6.9)
     github-markup (1.7.0)
     gitlab-grit (2.8.3)
       charlock_holmes (~> 0.7)
@@ -60,6 +61,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  github-markdown
   gollum
 
 BUNDLED WITH

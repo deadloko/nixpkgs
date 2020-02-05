@@ -30,6 +30,16 @@
     };
     version = "3.3.0";
   };
+  github-markdown = {
+    groups = ["default"];
+    platforms = [];
+    source = {
+      remotes = ["https://rubygems.org"];
+      sha256 = "0nax4fyyhz9xmi7q6mmc6d1h8hc0cxda9d7q5z0pba88mj00s9fj";
+      type = "gem";
+    };
+    version = "0.6.9";
+  };
   github-markup = {
     groups = ["default"];
     platforms = [];
