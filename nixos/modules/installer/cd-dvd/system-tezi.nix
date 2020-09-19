@@ -15,16 +15,6 @@
 
 with lib;
 
-let
-  rootfsImage = pkgs.callPackage ../../../lib/make-ext4-fs.nix ({
-    inherit (config.sdImage) storePaths;
-    compressImage = true;
-    populateImageCommands = config.sdImage.populateRootCommands;
-    volumeLabel = "NIXOS_SD";
-  } // optionalAttrs (config.sdImage.rootPartitionUUID != null) {
-    uuid = config.sdImage.rootPartitionUUID;
-  });
-in
 {
   imports = [
     (mkRemovedOptionModule [ "sdImage" "bootPartitionID" ] "The FAT partition for SD image now only holds the Raspberry Pi firmware files. Use firmwarePartitionID to configure that partition's ID.")
@@ -153,19 +143,25 @@ in
 
       inherit (config.sdImage) compressImage;
 
-      buildCommand = ''
+      buildCommand = let
+        inherit (config.sdImage) storePaths;
+        sdClosureInfo = pkgs.buildPackages.closureInfo { rootPaths = storePaths; };
+      in
+        ''
         mkdir -p $out/nix-support $out/tezi-image
         echo "${pkgs.stdenv.buildPlatform.system}" > $out/nix-support/system
 
-        echo "Decompressing rootfs image"
-        zstd -d --no-progress "${rootfsImage}" -o ./root-fs.img
+        mkdir -p ./temp_root_fs
+        ${config.sdImage.populateRootCommands}
 
-        mkdir temp_root_fs
-        fs2tar -t ext4 ./root-fs.img ./temp_root_fs/rootfs.tar
+        # Add the closures of the top-level store objects.
+        storePaths=$(cat ${sdClosureInfo}/store-paths)
 
         cd temp_root_fs
-        tar -xf rootfs.tar
-        rm rootfs.tar
+        cp ${sdClosureInfo}/registration ./nix-path-registration
+        mkdir -p nix/store
+        cp -r $storePaths nix/store/
+
         time tar --sort=name --mtime='@1' --owner=0 --group=0 --numeric-owner -c * | xz > $out/tezi-image/tezi-rootfs.tar.xz
 
         mkdir boot
