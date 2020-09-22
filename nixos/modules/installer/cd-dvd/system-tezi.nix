@@ -162,12 +162,12 @@ with lib;
         mkdir -p nix/store
         cp -r $storePaths nix/store/
 
-        time tar --sort=name --mtime='@1' --owner=0 --group=0 --numeric-owner -c * | xz > $out/tezi-image/tezi-rootfs.tar.xz
+        time tar -Jcf $out/tezi-image/tezi-rootfs.tar.xz --sort=name --mtime='1970-01-01' --owner=0 --group=0 --numeric-owner -c *
 
         mkdir boot
         ${config.teziTarballs.populateBootCommands}
         cd boot
-        time tar --sort=name --mtime='@1' --owner=0 --group=0 --numeric-owner -c * | xz > $out/tezi-image/tezi-bootfs.tar.xz
+        time tar -Jcf $out/tezi-image/tezi-bootfs.tar.xz --sort=name --mtime='1970-01-01' --owner=0 --group=0 --numeric-owner -c *
 
         ${config.sdImage.postImageBuildCommands}
       '';
